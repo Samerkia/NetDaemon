@@ -3,6 +3,8 @@ import threading
 import subprocess
 import os
 import struct
+import sys
+from getopt import *
 
 # Function for colored output
 def color(r=None, g=None, b=None, text=None, col=None):
@@ -26,11 +28,20 @@ def color(r=None, g=None, b=None, text=None, col=None):
 
 # Global list of connected clients
 clients = []  # List of tuples (socket, address)
+# Default host and port
+DEFAULT_HOST = '127.0.0.1'
+DEFAULT_PORT = 12345
 
 # Print help dialogue
 def printHelp():
     # Looks better but still working on making this look good
     commands = [
+        ("Command Line Arguments:", "Used for starting the server with custom options"),
+        ("-t, --target <IP>", "Optional, IP address to bind the server to. Default: 127.0.0.1"),
+        ("-p, --port <PORT>", "Optional, Port to bind the server to. Default: 12345"),
+        ("-h, --help", "Optional, Shows this dialogue"),
+        ("", ""),
+        ("Custom Commands:", "Used in the shell to control clients and server operations"),
         ("exit / quit", "Ends the server communication side only"),
         ("list", "Lists all available clients with their index"),
         ("connect <index>", "Connects to a client given the index"),
@@ -44,9 +55,10 @@ def printHelp():
     print("\n" + "_"*120)
     for cmd, desc in commands:
         # Pad the plain command to 25 characters
-        padded_cmd = f"{cmd:<22}"
+        padded_cmd = f"{cmd:<25}"
         # Apply color only to the padded command
-        print(f"{color(col='yellow', text=padded_cmd)} ----->  {desc}")
+        if cmd: print(f"{color(col='yellow', text=padded_cmd)} ----->  {desc}")
+        else: print("_"*120)
     print("_"*120)
     print(f"{color(col='yellow', text='NOTE:')}\tYou also have your other basic shell commands like ls, dir, cd, etc\n")
 
@@ -55,7 +67,7 @@ def createServerSocket(host='127.0.0.1', port=12345):
     servSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     servSocket.bind((host, port))
     servSocket.listen()
-    print(f"{color(col='green', text='Server started!')} Listening for connections...")
+    print(f"{color(col='green', text='Server started on')} <{color(col='cyan', text=host)} : {color(col='cyan', text=port)}>\nListening for connections...")
     return servSocket
 
 # Accept incoming client connections
@@ -172,9 +184,42 @@ def interactWithClient(clientIndex):
         print(color(col='red', text=f"Client {address} disconnected"))
         clients.pop(clientIndex)
 
+#Gets arguments
+def get_arguments():
+
+    try:
+        #option map
+        options = getopt(sys.argv[1:],
+                         shortopts="t:p:h",
+                         longopts=["text=", "prints=", "help"])
+    except GetoptError as e:
+        print ("ERROR: Wrong option used --> ", e)
+
+    host = DEFAULT_HOST
+    port = DEFAULT_PORT
+    if options:
+        for (opt, args) in options[0]:
+
+            #Help options
+            if opt in ("-h", "--help"):
+                sys.exit(printHelp())
+            #IP/Host option
+            if opt in ("-t", "--target"):
+                host = args
+            #Port option
+            try:
+                if opt in ("-p", "--port"):
+                    port = int(args)
+            except ValueError as e:
+                print("ERROR: Port must be an int value --> ", e)
+                sys.exit(printHelp())
+    
+    return host, port
+
 # Main server loop
 def main():
-    servSocket = createServerSocket()
+    host, port = get_arguments()
+    servSocket = createServerSocket(host, port)
     threading.Thread(target=acceptClients, args=(servSocket,), daemon=True).start()
 
     try:

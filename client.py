@@ -3,6 +3,8 @@ import time
 import subprocess
 import os
 import struct, base64
+import sys
+from getopt import *
 
 # Function for colored output
 def color(r=None, g=None, b=None, text=None, col=None):
@@ -30,13 +32,14 @@ def createSocket():
     return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Attempt to connect to the server, retrying if it fails.
-def connectToServer(clientSocket):
+def connectToServer(clientSocket, host='127.0.0.1', port=12345):
     #Attempt to connect to the server, retrying if it fails.
     connected = False
     while not connected:
         try:
-            clientSocket.connect(('127.0.0.1', 12345))
+            clientSocket.connect((host, port))
             connected = True
+            print(color(col='green', text=f'Trying to connect to server at:') + color(col='cyan', text=f'<{host} : {port}>'))
         except ConnectionRefusedError as e:
             conRefErrorStr = "\n-- Could NOT find server, trying again. Ctrl+C to terminate program fully"
             print(f"{color(col='red', text=str(e))} {conRefErrorStr}")
@@ -146,19 +149,56 @@ def processData(data, clientSocket):
 
     return False
 
+# Default host and port
+DEFAULT_HOST = '127.0.0.1'
+DEFAULT_PORT = 12345
+
+#Gets arguments
+def get_arguments():
+
+    try:
+        #option map
+        options = getopt(sys.argv[1:],
+                         shortopts="t:p:h",
+                         longopts=["text=", "prints=", "help"])
+    except GetoptError as e:
+        print ("ERROR: Wrong option used --> ", e)
+
+    host = DEFAULT_HOST
+    port = DEFAULT_PORT
+    if options:
+        for (opt, args) in options[0]:
+
+            #Help options
+            if opt in ("-h", "--help"):
+                sys.exit(print("You can use -t or --target to set the server IP/host and -p or --port to set the server port, otherwise defaults will be used."))
+            #IP/Host option
+            if opt in ("-t", "--target"):
+                host = args
+            #Port option
+            try:
+                if opt in ("-p", "--port"):
+                    port = int(args)
+            except ValueError as e:
+                print("ERROR: Port must be an int value --> ", e)
+                sys.exit(print("You can use -t or --target to set the server IP/host and -p or --port to set the server port, otherwise defaults will be used."))
+    
+    return host, port
+
 # Main function/connection loop
 def main():
     keepRunning = True
+    host, port = get_arguments()
     while keepRunning:  # Outer loop for automatic reconnection
         clientSocket = createSocket()
         try:
-            connectToServer(clientSocket)
+            connectToServer(clientSocket, host, port)
         except KeyboardInterrupt:
             print(color(col='yellow', text='Terminating process.'))
             break
 
         serverIP, serverPort = getServerInfo(clientSocket)
-        print(f"{color(col='green', text='Connection established to:')} {serverIP}:{serverPort}")
+        print(color(col='green', text=f'Connection established to:') + color(col='cyan', text=f'<{serverIP} : {serverPort}>'))
 
         try:
             while True:
@@ -170,6 +210,7 @@ def main():
                     
                     if data in ["TERMINATE"]:
                         keepRunning = False
+                        print(color(col='red', text="Server has remotely terminated the connection. Exiting client..."))
                         break
 
                     if processData(data, clientSocket):
@@ -189,7 +230,7 @@ def main():
                 pass
             # Small delay before reconnecting
             time.sleep(3)
-            print(color(col='yellow', text='Reattempting connection...'))
+            if keepRunning: print(color(col='yellow', text='Reattempting connection...'))
 
 if __name__ == "__main__":
     main()

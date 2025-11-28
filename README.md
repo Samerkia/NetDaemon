@@ -1,6 +1,6 @@
 # NetDaemon
 
-**NetDaemon** is a multi-client TCP server-client communication system. The server can manage multiple clients simultaneously, execute shell commands remotely, and transfer files between server and clients. It also supports automatic client reconnection if the connection is lost.  
+**NetDaemon** is a multi-client TCP server-client communication system. The server can manage multiple clients simultaneously, execute shell commands remotely, and transfer files between server and clients. It also supports automatic client reconnection if the connection is lost.
 
 ---
 
@@ -12,6 +12,19 @@
 - Automatic client reconnection  
 - Interactive client selection  
 - Simple, colorful terminal interface  
+- Command-line arguments for custom server startup options  
+
+---
+
+## Command-Line Arguments
+
+These arguments let you start the server with customized settings:
+
+| Argument | Description |
+|---------|-------------|
+| `-t, --target <IP>` | Optional. The IP address for the server to bind to. Default: `127.0.0.1` |
+| `-p, --port <PORT>` | Optional. The port for the server to bind to. Default: `12345` |
+| `-h, --help` | Optional. Displays the help dialogue and exits |
 
 ---
 
@@ -19,40 +32,43 @@
 
 ### **General / Server Shell**
 
-| Command                  | Description |
-|---------------------------|-------------|
-| `exit` / `quit`           | Ends the server communication shell (server-side only) |
-| `list`                     | Lists all connected clients with their index |
-| `connect <index>`          | Connects to a client given its index |
-| `back`                     | Returns to the main server shell from a client session |
+| Command | Description |
+|---------|-------------|
+| `exit` / `quit` | Ends the server communication shell (server-side only) |
+| `list` | Lists all connected clients with their index |
+| `connect <index>` | Connects to a client given its index |
+| `back` | Returns to the main server shell from a client session |
 
 ---
 
-### **Client Shell**
+## Client Shell Commands
 
-| Command                  | Description |
-|---------------------------|-------------|
-| `endcon` / `disconnect`   | Ends the connection with the current client (permanent disconnect) |
-| `upload <path>`           | Uploads a file from the server to the client |
-| `download <path>`         | Downloads a file from the client to the server |
-| `help`                     | Shows this help dialogue |
+These are available after connecting to a specific client:
+
+| Command | Description |
+|---------|-------------|
+| `endcon` / `disconnect` | Permanently disconnects from the client and returns to the main server shell |
+| `upload <path>` | Uploads a file *from the server to the client* |
+| `download <path>` | Downloads a file *from the client to the server* |
+| `help` | Shows the help dialogue |
 
 ---
 
-### **Basic Shell Commands**
+## Basic Shell Commands (Executed on the Client)
 
-These are executed on the client system:
+NetDaemon forwards many normal shell commands to the connected client:
 
-- `ls` / `dir` – list files in current directory  
+- `ls` / `dir` – list files in the current directory  
 - `cd <directory>` – change directory  
-- `pwd` – print current working directory  
-- `grep <pattern>` – search text in files  
-- And other standard shell commands  
+- `pwd` – print working directory  
+- `grep <pattern>` – search text inside files  
+- …and most standard shell commands supported by the client OS  
 
 ---
 
-### **Notes**
+## Notes
 
-- When a client disconnects unexpectedly, it will automatically attempt to reconnect.  
-- The server can interact with multiple clients at once, and you can switch between them with `connect <index>` and `back`.  
-- Colored terminal output improves readability of commands and statuses.  
+- Clients automatically attempt to reconnect if disconnected unexpectedly.  
+- Multiple clients can be connected concurrently; switch between them using `connect <index>` and `back`.  
+- Color-coded terminal output improves readability of commands, statuses, and errors.  
+- Use the `--help` flag or the in-shell `help` command to display the full help dialogue.
